@@ -6,7 +6,7 @@ import '../../core/widgets.dart';
 
 final _pendingUploadsProvider = FutureProvider<int>((ref) async {
   ref.watch(progressRevisionProvider);
-  return (await ref.read(progressRepositoryProvider).unsyncedAttempts()).length;
+  return (await ref.watch(progressRepositoryProvider).unsyncedAttempts()).length;
 });
 
 /// Offline-first status: what is stored on the device, and manual sync.

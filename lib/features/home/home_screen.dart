@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatars.dart';
 import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
@@ -23,6 +24,14 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text('مرحبًا يا $name'),
         actions: [
+          IconButton(
+            tooltip: 'تبديل الطالب',
+            icon: StudentAvatar(profile?.avatar ?? 0, radius: 16),
+            onPressed: () async {
+              await ref.read(profilesProvider.notifier).signOut();
+              if (context.mounted) context.go('/profiles');
+            },
+          ),
           IconButton(
             key: const Key('search_button'),
             tooltip: 'البحث',

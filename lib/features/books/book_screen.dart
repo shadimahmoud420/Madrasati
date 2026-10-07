@@ -9,7 +9,7 @@ import '../../data/models.dart';
 
 final _bookmarksProvider = FutureProvider.family<List<int>, String>((ref, bookId) async {
   ref.watch(progressRevisionProvider);
-  return ref.read(progressRepositoryProvider).bookmarks(bookId);
+  return ref.watch(progressRepositoryProvider).bookmarks(bookId);
 });
 
 /// Offline book reader: swipe pages, search inside the book, jump to a page,

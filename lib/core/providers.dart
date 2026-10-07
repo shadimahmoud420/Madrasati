@@ -23,47 +23,126 @@ final assetBundleProvider = Provider<AssetBundle>((ref) => rootBundle);
 final clockProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
 final packStoreProvider = Provider<PackStore>((ref) => PackStore(ref.watch(appDatabaseProvider)));
+final profileStoreProvider = Provider<ProfileStore>((ref) => ProfileStore(ref.watch(appDatabaseProvider)));
+
+/// Students on this device, loaded before the first frame (see
+/// [ProfilesController.bootstrap]).
+final initialProfilesProvider = Provider<List<Profile>>((ref) => const []);
+
+/// The signed-in student's activity only.
 final progressRepositoryProvider = Provider<ProgressRepository>(
-  (ref) => ProgressRepository(ref.watch(appDatabaseProvider)),
+  (ref) => ProgressRepository(ref.watch(appDatabaseProvider), ref.watch(profileProvider)?.id ?? ''),
 );
 
-// ---------------------------------------------------------------- profile
+// ---------------------------------------------------------------- profiles
 
-class StudentProfile {
-  const StudentProfile({required this.name, required this.gradeId, required this.semester});
+class ProfilesState {
+  const ProfilesState({required this.profiles, this.activeId});
 
-  final String name;
-  final String gradeId;
-  final int semester;
+  final List<Profile> profiles;
+
+  /// The signed-in student, or null on the "who is studying?" screen.
+  final String? activeId;
+
+  Profile? get active => profiles.where((p) => p.id == activeId).firstOrNull;
 }
 
-class ProfileController extends Notifier<StudentProfile?> {
-  static const _kName = 'profile.name';
-  static const _kGrade = 'profile.grade';
-  static const _kSemester = 'profile.semester';
+/// Several students can share one device without passwords: each picks
+/// their own card, and "sign out" returns to the picker. Each student's data
+/// is kept apart (see [ProgressRepository]).
+class ProfilesController extends Notifier<ProfilesState> {
+  static const _kActive = 'profile.active';
 
   SharedPreferencesWithCache get _prefs => ref.read(sharedPreferencesProvider);
+  ProfileStore get _store => ref.read(profileStoreProvider);
+  DateTime get _now => ref.read(clockProvider)();
 
   @override
-  StudentProfile? build() {
-    final grade = _prefs.getString(_kGrade);
-    if (grade == null) return null;
-    return StudentProfile(
-      name: _prefs.getString(_kName) ?? '',
-      gradeId: grade,
-      semester: _prefs.getInt(_kSemester) ?? 1,
+  ProfilesState build() {
+    final profiles = ref.read(initialProfilesProvider);
+    final active = _prefs.getString(_kActive);
+    return ProfilesState(profiles: profiles, activeId: profiles.any((p) => p.id == active) ? active : null);
+  }
+
+  /// Loads the students, first converting the single-student settings of
+  /// earlier versions into a profile that owns the existing progress.
+  static Future<List<Profile>> bootstrap(SharedPreferencesWithCache prefs, ProfileStore store, DateTime now) async {
+    var profiles = await store.all();
+    final legacyGrade = prefs.getString('profile.grade');
+    if (profiles.isEmpty && legacyGrade != null) {
+      final name = prefs.getString('profile.name') ?? '';
+      await store.save(
+        Profile(
+          id: AppDatabase.legacyProfileId,
+          name: name.isEmpty ? 'طالب' : name,
+          gradeId: legacyGrade,
+          semester: prefs.getInt('profile.semester') ?? 1,
+          avatar: 0,
+          lastUsedAt: now,
+        ),
+        now,
+      );
+      await prefs.setString(_kActive, AppDatabase.legacyProfileId);
+      for (final k in ['profile.grade', 'profile.name', 'profile.semester']) {
+        await prefs.remove(k);
+      }
+      profiles = await store.all();
+    }
+    return profiles;
+  }
+
+  Future<Profile> create({required String name, required String gradeId, required int semester, int? avatar}) async {
+    final profile = Profile(
+      id: const Uuid().v4(),
+      name: name,
+      gradeId: gradeId,
+      semester: semester,
+      avatar: avatar ?? state.profiles.length % avatarCount,
+      lastUsedAt: _now,
+    );
+    await _store.save(profile, _now);
+    await _prefs.setString(_kActive, profile.id);
+    state = ProfilesState(profiles: [profile, ...state.profiles], activeId: profile.id);
+    return profile;
+  }
+
+  Future<void> update(Profile profile) async {
+    await _store.save(profile, _now);
+    state = ProfilesState(
+      profiles: [for (final p in state.profiles) p.id == profile.id ? profile : p],
+      activeId: state.activeId,
     );
   }
 
-  Future<void> save(StudentProfile profile) async {
-    await _prefs.setString(_kName, profile.name);
-    await _prefs.setString(_kGrade, profile.gradeId);
-    await _prefs.setInt(_kSemester, profile.semester);
-    state = profile;
+  Future<void> switchTo(String id) async {
+    await _store.touch(id, _now);
+    await _prefs.setString(_kActive, id);
+    state = ProfilesState(profiles: await _store.all(), activeId: id);
+  }
+
+  Future<void> signOut() async {
+    await _prefs.remove(_kActive);
+    state = ProfilesState(profiles: state.profiles);
+  }
+
+  /// Deletes the student and all their progress on this device.
+  Future<void> delete(String id) async {
+    await _store.delete(id);
+    if (state.activeId == id) await _prefs.remove(_kActive);
+    state = ProfilesState(
+      profiles: state.profiles.where((p) => p.id != id).toList(),
+      activeId: state.activeId == id ? null : state.activeId,
+    );
   }
 }
 
-final profileProvider = NotifierProvider<ProfileController, StudentProfile?>(ProfileController.new);
+/// Number of avatars [Profile.avatar] can point to.
+const avatarCount = 8;
+
+final profilesProvider = NotifierProvider<ProfilesController, ProfilesState>(ProfilesController.new);
+
+/// The signed-in student.
+final profileProvider = Provider<Profile?>((ref) => ref.watch(profilesProvider).active);
 
 final currentGradeProvider = Provider<GradeInfo?>((ref) {
   final id = ref.watch(profileProvider)?.gradeId;
@@ -203,8 +282,8 @@ final contentSyncProvider = Provider<ContentSync>(ContentSync.new);
 
 final statsProvider = FutureProvider<LearnerStats>((ref) async {
   ref.watch(progressRevisionProvider);
+  final repo = ref.watch(progressRepositoryProvider);
   final pack = await ref.watch(packProvider.future);
-  final repo = ref.read(progressRepositoryProvider);
   return LearnerStats.compute(
     pack: pack,
     progress: await repo.lessonProgress(),
@@ -275,6 +354,6 @@ final progressActionsProvider = Provider<ProgressActions>(ProgressActions.new);
 /// Last score per question, to avoid repeating ones already mastered.
 final lastScoresProvider = FutureProvider<Map<String, double>>((ref) async {
   ref.watch(progressRevisionProvider);
-  final answers = await ref.read(progressRepositoryProvider).answers();
+  final answers = await ref.watch(progressRepositoryProvider).answers();
   return {for (final a in answers) a.questionId: a.score};
 });

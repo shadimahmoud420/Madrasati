@@ -24,16 +24,23 @@ Future<void> main() async {
     jsonDecode(await rootBundle.loadString('assets/content/catalog.json')) as Map<String, dynamic>,
   );
   const configured = AppConfig.supabaseUrl != '' && AppConfig.supabaseAnonKey != '';
+  final profiles = await ProfilesController.bootstrap(prefs, ProfileStore(db), DateTime.now());
 
   final container = ProviderContainer(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       appDatabaseProvider.overrideWithValue(db),
       catalogProvider.overrideWithValue(catalog),
+      initialProfilesProvider.overrideWithValue(profiles),
       reminderServiceProvider.overrideWithValue(LocalReminderService()),
       if (configured)
-        backendProvider.overrideWithValue(
-          SupabaseBackend(url: AppConfig.supabaseUrl, anonKey: AppConfig.supabaseAnonKey, prefs: prefs),
+        backendProvider.overrideWith(
+          (ref) => SupabaseBackend(
+            url: AppConfig.supabaseUrl,
+            anonKey: AppConfig.supabaseAnonKey,
+            prefs: prefs,
+            scope: () => ref.read(profileProvider)?.id ?? 'none',
+          ),
         ),
     ],
   );

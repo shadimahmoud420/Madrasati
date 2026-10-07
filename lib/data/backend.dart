@@ -117,7 +117,9 @@ class SupabaseBackend implements Backend {
     required this._prefs,
     http.Client? client,
     DateTime Function()? clock,
-  }) : _client = client ?? http.Client(),
+    String Function()? scope,
+  }) : _scope = scope ?? (() => ''),
+       _client = client ?? http.Client(),
        _clock = clock ?? DateTime.now;
 
   final String url;
@@ -126,10 +128,14 @@ class SupabaseBackend implements Backend {
   final http.Client _client;
   final DateTime Function() _clock;
 
+  /// Each student on the device gets their own anonymous session, so their
+  /// synced results stay separate on the server too.
+  final String Function() _scope;
+
   static const _timeout = Duration(seconds: 20);
-  static const _kAccess = 'auth.access';
-  static const _kRefresh = 'auth.refresh';
-  static const _kExpiry = 'auth.expiry';
+  String get _kAccess => 'auth.${_scope()}.access';
+  String get _kRefresh => 'auth.${_scope()}.refresh';
+  String get _kExpiry => 'auth.${_scope()}.expiry';
 
   @override
   bool get enabled => true;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatars.dart';
 import '../../core/providers.dart';
 import '../progress/learner_stats.dart';
 import 'reminder_service.dart';
@@ -52,9 +53,23 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           ListTile(
+            leading: StudentAvatar(profile?.avatar ?? 0, radius: 22),
+            title: Text(profile?.name ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: const Text('الطالب الحالي'),
+            trailing: TextButton.icon(
+              key: const Key('switch_student'),
+              onPressed: () async {
+                await ref.read(profilesProvider.notifier).signOut();
+                if (context.mounted) context.go('/profiles');
+              },
+              icon: const Icon(Icons.logout),
+              label: const Text('تبديل الطالب'),
+            ),
+          ),
+          ListTile(
             key: const Key('change_grade'),
             leading: const Icon(Icons.school),
-            title: const Text('الصف والفصل'),
+            title: const Text('الاسم والصف والفصل'),
             subtitle: Text('${grade?.fullName ?? ''} • الفصل ${profile?.semester == 2 ? 'الثاني' : 'الأول'}'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => context.push('/settings/grade'),

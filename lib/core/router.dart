@@ -6,6 +6,7 @@ import '../features/books/book_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/lessons/lesson_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/profiles/profiles_screen.dart';
 import '../features/progress/progress_screen.dart';
 import '../features/quiz/quiz_engine.dart';
 import '../features/quiz/quiz_result_screen.dart';
@@ -20,11 +21,16 @@ import 'providers.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   // Read once: the start location only matters at launch.
-  final onboarded = ref.read(profileProvider) != null;
+  final profiles = ref.read(profilesProvider);
   final router = GoRouter(
-    initialLocation: onboarded ? '/home' : '/onboarding',
+    initialLocation: profiles.active != null
+        ? '/home'
+        : profiles.profiles.isNotEmpty
+        ? '/profiles'
+        : '/onboarding',
     routes: [
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
+      GoRoute(path: '/profiles', builder: (_, _) => const ProfilesScreen()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => _HomeShell(shell: shell),
         branches: [

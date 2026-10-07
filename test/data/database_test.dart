@@ -12,7 +12,7 @@ void main() {
 
   setUp(() async {
     db = await openTestDatabase();
-    repo = ProgressRepository(db);
+    repo = ProgressRepository(db, 'p1');
   });
 
   tearDown(() => db.close());

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/avatars.dart';
 import '../../core/providers.dart';
 import '../../data/models.dart';
 
-/// Stage → grade → semester. Also used from settings to change grade.
+/// New student: name and picture, then stage → grade → semester. With
+/// [editing], changes the signed-in student instead.
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key, this.editing = false});
 
@@ -20,13 +22,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Stage? _stage;
   String? _gradeId;
   int _semester = 1;
+  int? _avatar;
 
   @override
   void initState() {
     super.initState();
-    final profile = ref.read(profileProvider);
+    _name.addListener(() => setState(() {}));
+    final profile = widget.editing ? ref.read(profileProvider) : null;
     if (profile != null) {
       _name.text = profile.name;
+      _avatar = profile.avatar;
       _gradeId = profile.gradeId;
       _semester = profile.semester;
       _stage = ref.read(catalogProvider).grade(profile.gradeId)?.stage;
@@ -40,9 +45,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   Future<void> _save() async {
-    await ref
-        .read(profileProvider.notifier)
-        .save(StudentProfile(name: _name.text.trim(), gradeId: _gradeId!, semester: _semester));
+    final profiles = ref.read(profilesProvider.notifier);
+    final current = ref.read(profileProvider);
+    if (widget.editing && current != null) {
+      await profiles.update(
+        current.copyWith(name: _name.text.trim(), gradeId: _gradeId, semester: _semester, avatar: _avatar),
+      );
+    } else {
+      await profiles.create(name: _name.text.trim(), gradeId: _gradeId!, semester: _semester, avatar: _avatar);
+    }
     ref.read(contentSyncProvider).pull(_gradeId!);
     if (!mounted) return;
     if (widget.editing) {
@@ -58,7 +69,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final text = Theme.of(context).textTheme;
     final grades = _stage == null ? const <GradeInfo>[] : catalog.gradesOf(_stage!);
     return Scaffold(
-      appBar: widget.editing ? AppBar(title: const Text('الصف الدراسي')) : null,
+      appBar: widget.editing
+          ? AppBar(title: const Text('بيانات الطالب'))
+          : ref.watch(profilesProvider).profiles.isNotEmpty
+          ? AppBar(title: const Text('طالب جديد'))
+          : null,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
@@ -75,7 +90,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               key: const Key('name_field'),
               controller: _name,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(labelText: 'اسمك (اختياري)', prefixIcon: Icon(Icons.person_outline)),
+              decoration: const InputDecoration(labelText: 'اسم الطالب', prefixIcon: Icon(Icons.person_outline)),
+            ),
+            const SizedBox(height: 16),
+            Text('اختر صورتك', style: text.titleMedium),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (var i = 0; i < avatarCount; i++)
+                  GestureDetector(
+                    onTap: () => setState(() => _avatar = i),
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _avatar == i ? Theme.of(context).colorScheme.primary : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                      child: StudentAvatar(i, radius: 24),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 24),
             Text('اختر المرحلة', style: text.titleMedium),
@@ -128,7 +167,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             const SizedBox(height: 32),
             FilledButton.icon(
               key: const Key('start_button'),
-              onPressed: _gradeId == null ? null : _save,
+              onPressed: _gradeId == null || _name.text.trim().isEmpty ? null : _save,
               icon: const Icon(Icons.arrow_forward),
               label: Text(widget.editing ? 'حفظ' : 'ابدأ التعلّم'),
             ),

@@ -10,7 +10,7 @@ import 'learner_stats.dart';
 
 final _recentAttemptsProvider = FutureProvider<List<AttemptRecord>>((ref) async {
   ref.watch(progressRevisionProvider);
-  return ref.read(progressRepositoryProvider).attempts(limit: 15);
+  return ref.watch(progressRepositoryProvider).attempts(limit: 15);
 });
 
 class ProgressScreen extends ConsumerWidget {

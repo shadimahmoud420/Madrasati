@@ -23,7 +23,7 @@ void main() {
 
   Future<ProviderContainer> container(FakeBackend backend) async {
     final c = ProviderContainer(
-      overrides: testOverrides(prefs: await testPrefs({'profile.grade': 'g4'}), db: db, backend: backend),
+      overrides: await testOverrides(prefs: await testPrefs({'profile.grade': 'g4'}), db: db, backend: backend),
     );
     addTearDown(c.dispose);
     await c.read(contentSyncProvider).installBundled();

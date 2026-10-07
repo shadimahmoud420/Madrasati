@@ -74,12 +74,17 @@ class FakeBackend implements Backend {
   }
 }
 
-List<Override> testOverrides({
+/// Legacy-style prefs (`profile.grade`, `profile.name`) become the signed-in
+/// student, exactly as on an upgraded device.
+Future<List<Override>> testOverrides({
   required SharedPreferencesWithCache prefs,
   required AppDatabase db,
   Backend? backend,
   DateTime Function()? clock,
-}) => [
+}) async => [
+  initialProfilesProvider.overrideWithValue(
+    await ProfilesController.bootstrap(prefs, ProfileStore(db), DateTime(2026)),
+  ),
   sharedPreferencesProvider.overrideWithValue(prefs),
   appDatabaseProvider.overrideWithValue(db),
   catalogProvider.overrideWithValue(loadCatalog()),

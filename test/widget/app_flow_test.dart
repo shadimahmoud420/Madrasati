@@ -23,7 +23,7 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(430, 932));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final container = ProviderContainer(
-      overrides: testOverrides(
+      overrides: await testOverrides(
         prefs: await testPrefs(prefs),
         db: db,
         backend: backend,
@@ -41,7 +41,11 @@ void main() {
     await pumpApp(tester);
     expect(find.text('أهلًا بك في مدرستي'), findsOneWidget);
     await tester.enterText(find.byKey(const Key('name_field')), 'سارة');
+    await tester.ensureVisible(find.byKey(const Key('stage_lowerBasic')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('stage_lowerBasic')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('grade_g4')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('grade_g4')));
     await tester.pumpAndSettle();
@@ -57,6 +61,68 @@ void main() {
     expect(find.text('الصف الرابع'), findsOneWidget);
     expect(find.byKey(const Key('continue_lesson')), findsOneWidget);
     expect(find.text('مفهوم الكسر'), findsOneWidget);
+  });
+
+  testWidgets('switching students: each sees only their own grade and progress', (tester) async {
+    final container = await pumpApp(tester, prefs: {'profile.grade': 'g9', 'profile.name': 'محمود'});
+    expect(find.text('مرحبًا يا محمود'), findsOneWidget);
+    await tester.runAsync(
+      () => container
+          .read(progressRepositoryProvider)
+          .saveAttempt(
+            AttemptRecord(
+              uid: 'm1',
+              kind: AttemptKind.quiz,
+              title: 't',
+              startedAt: DateTime(2026, 10, 7),
+              duration: Duration.zero,
+              score: 1,
+              maxScore: 1,
+            ),
+            const [],
+          ),
+    );
+
+    // Sign out from settings → picker → add a new student.
+    await tester.tap(find.text('الإعدادات'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('switch_student')));
+    await tester.pumpAndSettle();
+    expect(find.text('من يدرس الآن؟'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('add_student')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('name_field')), 'محمد');
+    await tester.ensureVisible(find.byKey(const Key('stage_lowerBasic')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('stage_lowerBasic')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('grade_g4')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('grade_g4')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('start_button')),
+      200,
+      scrollable: find.ancestor(of: find.byKey(const Key('name_field')), matching: find.byType(Scrollable)).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('start_button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('مرحبًا يا محمد'), findsOneWidget);
+    expect(find.text('الصف الرابع'), findsOneWidget);
+    expect((await container.read(statsProvider.future)).attemptCount, 0);
+
+    // Back to Mahmoud: his grade and his result are still there.
+    container.read(routerProvider).go('/settings');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('switch_student')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('محمود'));
+    await tester.pumpAndSettle();
+    expect(find.text('مرحبًا يا محمود'), findsOneWidget);
+    expect(find.text('الصف التاسع'), findsOneWidget);
+    expect((await container.read(statsProvider.future)).attemptCount, 1);
   });
 
   testWidgets('grade without content shows a clear placeholder', (tester) async {
@@ -159,7 +225,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('book_bookmark')));
     await tester.pumpAndSettle();
-    expect(await ProgressRepository(db).bookmarks('g4_math_book'), hasLength(1));
+    expect(await ProgressRepository(db, AppDatabase.legacyProfileId).bookmarks('g4_math_book'), hasLength(1));
   });
 
   testWidgets('AI tutor sends the question with curriculum context', (tester) async {
