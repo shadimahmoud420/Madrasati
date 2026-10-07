@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -12,6 +14,7 @@ import 'core/providers.dart';
 import 'data/backend.dart';
 import 'data/database.dart';
 import 'data/models.dart';
+import 'features/books/library.dart';
 import 'features/settings/reminder_service.dart';
 import 'features/settings/settings_screen.dart';
 
@@ -24,6 +27,7 @@ Future<void> main() async {
     jsonDecode(await rootBundle.loadString('assets/content/catalog.json')) as Map<String, dynamic>,
   );
   const configured = AppConfig.supabaseUrl != '' && AppConfig.supabaseAnonKey != '';
+  final booksDir = Directory(p.join((await getApplicationSupportDirectory()).path, 'books'));
   final profiles = await ProfilesController.bootstrap(prefs, ProfileStore(db), DateTime.now());
 
   final container = ProviderContainer(
@@ -32,6 +36,7 @@ Future<void> main() async {
       appDatabaseProvider.overrideWithValue(db),
       catalogProvider.overrideWithValue(catalog),
       initialProfilesProvider.overrideWithValue(profiles),
+      booksDirProvider.overrideWithValue(booksDir),
       reminderServiceProvider.overrideWithValue(LocalReminderService()),
       if (configured)
         backendProvider.overrideWith(

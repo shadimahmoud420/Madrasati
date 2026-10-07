@@ -6,6 +6,8 @@ import '../../core/arabic.dart';
 import '../../core/providers.dart';
 import '../../core/widgets.dart';
 import '../../data/models.dart';
+import 'library.dart';
+import 'pdf_book_screen.dart';
 
 final _bookmarksProvider = FutureProvider.family<List<int>, String>((ref, bookId) async {
   ref.watch(progressRevisionProvider);
@@ -272,4 +274,30 @@ class _BookSearchSheetState extends State<_BookSearchSheet> {
     }
     return text.split('\n').first;
   }
+}
+
+/// Opens a book by id: the PDF reader for official or imported books, the
+/// text reader for books built from lessons.
+class BookRouteScreen extends ConsumerWidget {
+  const BookRouteScreen({super.key, required this.bookId, this.initialPage});
+
+  final String bookId;
+  final int? initialPage;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => AsyncView(
+    value: ref.watch(gradeBooksProvider),
+    builder: (books) {
+      final book = books.where((b) => b.id == bookId).firstOrNull;
+      if (book == null) {
+        return Scaffold(
+          appBar: AppBar(),
+          body: const EmptyState(icon: Icons.menu_book, title: 'الكتاب غير متوفر'),
+        );
+      }
+      return book.isPdf
+          ? PdfBookScreen(book: book, initialPage: initialPage)
+          : BookScreen(bookId: bookId, initialPage: initialPage);
+    },
+  );
 }

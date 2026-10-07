@@ -290,15 +290,26 @@ class BookPage {
 }
 
 class Book {
-  const Book({required this.id, required this.subjectId, required this.title, required this.pages, this.pdfUrl});
+  const Book({
+    required this.id,
+    required this.subjectId,
+    required this.title,
+    this.pages = const [],
+    this.pdfUrl,
+    this.semester,
+    this.sizeBytes,
+    this.localOnly = false,
+  });
 
   factory Book.fromJson(Map<String, dynamic> json, {required String subjectId}) => Book(
     id: json['id'] as String,
     subjectId: subjectId,
     title: json['title'] as String,
     pdfUrl: json['pdfUrl'] as String?,
+    semester: json['semester'] as int?,
+    sizeBytes: (json['sizeBytes'] as num?)?.toInt(),
     pages: [
-      for (final p in json['pages'] as List)
+      for (final p in json['pages'] as List? ?? const [])
         BookPage(
           number: (p as Map<String, dynamic>)['number'] as int,
           text: p['text'] as String,
@@ -310,8 +321,21 @@ class Book {
   final String id;
   final String subjectId;
   final String title;
+
+  /// Official book file (PDF) to download for offline reading.
   final String? pdfUrl;
+
+  /// 1 or 2; null when the book covers the whole year.
+  final int? semester;
+  final int? sizeBytes;
+
+  /// A PDF the student added from their own device.
+  final bool localOnly;
+
+  /// Text pages built from the lessons, used when there is no PDF.
   final List<BookPage> pages;
+
+  bool get isPdf => pdfUrl != null || localOnly;
 }
 
 class Exam {

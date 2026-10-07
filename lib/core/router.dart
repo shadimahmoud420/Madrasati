@@ -64,8 +64,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/book/:id',
-        builder: (_, s) =>
-            BookScreen(bookId: s.pathParameters['id']!, initialPage: int.tryParse(s.uri.queryParameters['page'] ?? '')),
+        builder: (_, s) => BookRouteScreen(
+          bookId: s.pathParameters['id']!,
+          initialPage: int.tryParse(s.uri.queryParameters['page'] ?? ''),
+        ),
       ),
       GoRoute(
         path: '/quiz',

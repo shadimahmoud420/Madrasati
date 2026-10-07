@@ -6,6 +6,8 @@ import '../../core/providers.dart';
 import '../../core/theme.dart';
 import '../../core/widgets.dart';
 import '../../data/models.dart';
+import '../books/book_tile.dart';
+import '../books/library.dart';
 import '../progress/learner_stats.dart';
 import '../quiz/quiz_launcher.dart';
 
@@ -16,6 +18,7 @@ class SubjectsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final grade = ref.watch(currentGradeProvider);
     final pack = ref.watch(packProvider).value;
+    final books = ref.watch(gradeBooksProvider).value ?? const <Book>[];
     final stats = ref.watch(statsProvider).value;
     return Scaffold(
       appBar: AppBar(title: Text('مواد ${grade?.fullName ?? ''}')),
@@ -37,7 +40,11 @@ class SubjectsScreen extends ConsumerWidget {
               ),
               title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
               subtitle: content == null
-                  ? const Text('المحتوى قيد الإعداد')
+                  ? Text(switch (books.where((b) => b.subjectId == s.id).length) {
+                      0 => 'المحتوى قيد الإعداد',
+                      1 => 'كتاب واحد',
+                      final n => '$n كتب',
+                    })
                   : Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: LinearProgressIndicator(value: st?.completion ?? 0, minHeight: 6),
@@ -75,40 +82,27 @@ class _SubjectScreenState extends ConsumerState<SubjectScreen> {
         value: ref.watch(packProvider),
         builder: (pack) {
           final content = pack?.subjects[widget.subjectId];
-          if (content == null) {
-            return const EmptyState(
-              icon: Icons.hourglass_top,
-              title: 'محتوى هذه المادة قيد الإعداد',
-              message: 'سيظهر هنا تلقائيًا عند إضافته من إدارة التطبيق واتصالك بالإنترنت.',
-            );
-          }
-          final units = content.units.where((u) => u.semester == semester).toList();
+          final books = (ref.watch(gradeBooksProvider).value ?? const <Book>[])
+              .where((b) => b.subjectId == widget.subjectId && (b.semester == null || b.semester == semester))
+              .toList();
+          final units = content?.units.where((u) => u.semester == semester).toList() ?? const <Unit>[];
           final subjectStats = stats?.subjects.where((x) => x.subjectId == widget.subjectId).firstOrNull;
+          final hasQuestions = content?.questions.isNotEmpty ?? false;
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              if (subjectStats != null) _SubjectSummary(stats: subjectStats),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => QuizLauncher(ref).testMe(context, subjectId: widget.subjectId),
-                      icon: const Icon(Icons.quiz),
-                      label: const Text('اختبرني'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: content.books.isEmpty ? null : () => context.push('/book/${content.books.first.id}'),
-                      icon: const Icon(Icons.chrome_reader_mode),
-                      label: const Text('الكتاب'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+              if (subjectStats != null && subjectStats.totalLessons > 0) ...[
+                _SubjectSummary(stats: subjectStats),
+                const SizedBox(height: 12),
+              ],
+              if (hasQuestions) ...[
+                FilledButton.icon(
+                  onPressed: () => QuizLauncher(ref).testMe(context, subjectId: widget.subjectId),
+                  icon: const Icon(Icons.quiz),
+                  label: const Text('اختبرني في هذه المادة'),
+                ),
+                const SizedBox(height: 16),
+              ],
               SegmentedButton<int>(
                 segments: const [
                   ButtonSegment(value: 1, label: Text('الفصل الأول')),
@@ -117,10 +111,33 @@ class _SubjectScreenState extends ConsumerState<SubjectScreen> {
                 selected: {semester},
                 onSelectionChanged: (v) => setState(() => _semester = v.first),
               ),
-              if (units.isEmpty)
+              const SectionTitle('الكتب'),
+              Card(
+                child: Column(
+                  children: [
+                    for (final b in books) BookTile(book: b),
+                    ListTile(
+                      key: const Key('import_book'),
+                      leading: const Icon(Icons.upload_file),
+                      title: const Text('إضافة كتاب PDF من جهازي'),
+                      subtitle: const Text('مثل كتاب وصلك عبر واتساب أو تيليجرام'),
+                      onTap: () => importBookFromDevice(context, ref, subjectId: widget.subjectId, semester: semester),
+                    ),
+                  ],
+                ),
+              ),
+              if (content == null)
                 const Padding(
                   padding: EdgeInsets.only(top: 24),
-                  child: Text('لا توجد وحدات لهذا الفصل بعد.', textAlign: TextAlign.center),
+                  child: Text(
+                    'الدروس والأسئلة لهذه المادة قيد الإعداد، وستظهر تلقائيًا عند إضافتها.',
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else if (units.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.only(top: 24),
+                  child: Text('لا توجد دروس لهذا الفصل بعد.', textAlign: TextAlign.center),
                 ),
               for (final unit in units) ...[
                 SectionTitle(unit.title),
@@ -133,7 +150,7 @@ class _SubjectScreenState extends ConsumerState<SubjectScreen> {
                   ),
                 ),
               ],
-              if (content.exams.isNotEmpty) ...[
+              if (content != null && content.exams.isNotEmpty) ...[
                 const SectionTitle('امتحانات تجريبية'),
                 Card(
                   child: Column(

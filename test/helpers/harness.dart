@@ -6,6 +6,7 @@ import 'package:madrasati/core/providers.dart';
 import 'package:madrasati/data/backend.dart';
 import 'package:madrasati/data/database.dart';
 import 'package:madrasati/data/models.dart';
+import 'package:madrasati/features/books/library.dart';
 import 'package:madrasati/features/settings/reminder_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -86,6 +87,7 @@ Future<List<Override>> testOverrides({
     await ProfilesController.bootstrap(prefs, ProfileStore(db), DateTime(2026)),
   ),
   sharedPreferencesProvider.overrideWithValue(prefs),
+  booksDirProvider.overrideWithValue(Directory.systemTemp.createTempSync('madrasati_books')),
   appDatabaseProvider.overrideWithValue(db),
   catalogProvider.overrideWithValue(loadCatalog()),
   reminderServiceProvider.overrideWithValue(NoopReminderService()),

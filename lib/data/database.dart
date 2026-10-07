@@ -14,7 +14,7 @@ class AppDatabase {
 
   final Database db;
 
-  static const _version = 2;
+  static const _version = 3;
 
   /// Profile id given to activity recorded before multi-student support.
   static const legacyProfileId = 'legacy';
@@ -55,10 +55,15 @@ class AppDatabase {
       id TEXT PRIMARY KEY, name TEXT NOT NULL, grade_id TEXT NOT NULL, semester INTEGER NOT NULL DEFAULT 1,
       avatar INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, last_used_at INTEGER NOT NULL)''';
 
+  static const _localBooksTable = '''CREATE TABLE local_books (
+      id TEXT PRIMARY KEY, subject_id TEXT NOT NULL, title TEXT NOT NULL, semester INTEGER,
+      size_bytes INTEGER, added_at INTEGER NOT NULL)''';
+
   static Future<void> _create(Database db) async {
     final batch = db.batch()
       ..execute('CREATE TABLE packs (grade_id TEXT PRIMARY KEY, version INTEGER NOT NULL, json TEXT NOT NULL)')
-      ..execute(_profilesTable);
+      ..execute(_profilesTable)
+      ..execute(_localBooksTable);
     for (final sql in _activityTables) {
       batch.execute(sql);
     }
@@ -68,7 +73,11 @@ class AppDatabase {
   /// v1 → v2: activity tables gain `profile_id`; existing rows belong to the
   /// [legacyProfileId] student (created from the old settings on start-up).
   static Future<void> _upgrade(Database db, int from) async {
-    if (from >= 2) return;
+    if (from < 2) await _upgradeToV2(db);
+    if (from < 3) await db.execute(_localBooksTable);
+  }
+
+  static Future<void> _upgradeToV2(Database db) async {
     const columns = {
       'lesson_progress': 'lesson_id, subject_id, opened_at, completed_at, synced',
       'attempts':
@@ -168,6 +177,37 @@ class ProfileStore {
       }
     });
   }
+}
+
+/// PDF books a student added from files on the device (shared by all
+/// students on it, like a bookshelf).
+class LocalBookStore {
+  LocalBookStore(this._db);
+
+  final AppDatabase _db;
+
+  Future<List<Book>> all() async => [
+    for (final r in await _db.db.query('local_books', orderBy: 'added_at'))
+      Book(
+        id: r['id'] as String,
+        subjectId: r['subject_id'] as String,
+        title: r['title'] as String,
+        semester: r['semester'] as int?,
+        sizeBytes: r['size_bytes'] as int?,
+        localOnly: true,
+      ),
+  ];
+
+  Future<void> add(Book book, DateTime now) => _db.db.insert('local_books', {
+    'id': book.id,
+    'subject_id': book.subjectId,
+    'title': book.title,
+    'semester': book.semester,
+    'size_bytes': book.sizeBytes,
+    'added_at': now.millisecondsSinceEpoch,
+  });
+
+  Future<void> remove(String id) => _db.db.delete('local_books', where: 'id = ?', whereArgs: [id]);
 }
 
 /// Stores grade packs (raw JSON) and tracks their versions.

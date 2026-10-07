@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
 import '../../core/widgets.dart';
+import '../../data/models.dart';
+import '../books/book_tile.dart';
+import '../books/library.dart';
 
 final _pendingUploadsProvider = FutureProvider<int>((ref) async {
   ref.watch(progressRevisionProvider);
@@ -109,8 +112,60 @@ class _DownloadsScreenState extends ConsumerState<DownloadsScreen> {
             const SizedBox(height: 12),
             Text(_message!, key: const Key('sync_message'), textAlign: TextAlign.center),
           ],
+          const _GradeLibrary(),
         ],
       ),
+    );
+  }
+}
+
+/// The grade's PDF books with their offline status, and "download all".
+class _GradeLibrary extends ConsumerWidget {
+  const _GradeLibrary();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final books = (ref.watch(gradeBooksProvider).value ?? const <Book>[]).where((b) => b.isPdf).toList();
+    final downloaded = ref.watch(downloadedBooksProvider).value ?? const <String, int>{};
+    final missing = books.where((b) => b.pdfUrl != null && !downloaded.containsKey(b.id)).toList();
+    final used = books.fold<int>(0, (sum, b) => sum + (downloaded[b.id] ?? 0));
+    final busy = ref.watch(bookLibraryProvider).isNotEmpty;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionTitle(
+          'كتب صفي (PDF)',
+          trailing: used == 0 ? null : Text(formatSize(used), style: Theme.of(context).textTheme.bodySmall),
+        ),
+        if (books.isEmpty)
+          const Text('لا توجد كتب PDF لصفك بعد. يمكنك إضافة كتاب من جهازك من صفحة المادة.')
+        else
+          Card(
+            child: Column(children: [for (final b in books) BookTile(book: b)]),
+          ),
+        if (missing.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const Key('download_all_books'),
+            onPressed: busy
+                ? null
+                : () async {
+                    for (final b in missing) {
+                      try {
+                        await ref.read(bookLibraryProvider.notifier).download(b);
+                      } on DownloadException catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+                        }
+                        return;
+                      }
+                    }
+                  },
+            icon: const Icon(Icons.download_for_offline),
+            label: Text('تحميل كل الكتب (${missing.length})'),
+          ),
+        ],
+      ],
     );
   }
 }
