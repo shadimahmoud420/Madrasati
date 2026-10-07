@@ -11,7 +11,7 @@
 3. ثبّت [Supabase CLI](https://supabase.com/docs/guides/cli) ثم من مجلد المشروع:
    ```bash
    supabase link --project-ref <ref>
-   supabase db push                      # ينشئ الجداول والصلاحيات من supabase/migrations
+   supabase db push                      # ينشئ الجداول والصلاحيات وحاوية الكتب من supabase/migrations
    psql "<connection string>" -f supabase/seed.sql   # يضيف الصفوف والمواد والمحتوى التجريبي
    ```
 4. انشر الحزم الأولى من **SQL Editor**:
@@ -35,7 +35,37 @@ flutter run --dart-define=SUPABASE_URL=https://<ref>.supabase.co --dart-define=S
 ```
 وفي Codemagic: مجموعة `madrasati_backend` بالمتغيرين نفسيهما (راجع RELEASE_GUIDE).
 
-## 4) إضافة أو تعديل المحتوى
+## 4) رفع الكتب المدرسية الرسمية (PDF)
+1. حمّل الكتب الرسمية بصيغة PDF من موقع وزارة التربية والتعليم أو مركز المناهج الفلسطيني، **بأعلى جودة متاحة**.
+2. رتّبها في مجلد بهذا الشكل (اسم الملف هو العنوان الذي يراه الطالب):
+   ```
+   books/
+     g4/math/s1/الرياضيات – الجزء الأول.pdf
+     g4/math/s2/الرياضيات – الجزء الثاني.pdf
+     g9/science/s1/العلوم والحياة – الجزء الأول.pdf
+     g12_sci/physics/all/الفيزياء.pdf        ← all = كتاب السنة كاملة
+   ```
+   - الصفوف: `g1` … `g10`، `g11_sci`، `g11_lit`، `g12_sci`، `g12_lit`.
+   - المواد: `arabic`، `math`، `science`، `islamic`، `english`، `national`، `social`، `tech`، `physics`، `chemistry`، `biology`، `geography`، `history`.
+   - الفصل: `s1` أو `s2` أو `all`.
+3. افحص المجلد أولًا (لا يرفع شيئًا):
+   ```bash
+   python3 tool/upload_books.py books/ --dry-run
+   ```
+4. ارفع وانشر (المفتاح من Project Settings ← API ← `service_role`، ولا تضعه في التطبيق أبدًا):
+   ```bash
+   export SUPABASE_URL=https://<ref>.supabase.co
+   export SUPABASE_SERVICE_ROLE_KEY=<service role key>
+   python3 tool/upload_books.py books/
+   ```
+   يمكن إعادة تشغيله في أي وقت: يتخطى الكتب غير المتغيرة، ويستبدل المعدّلة، ثم يعيد نشر الصفوف المتأثرة فقط.
+5. في التطبيق: يظهر كل كتاب في صفحة مادته حسب الفصل، ويحمّله الطالب مرة واحدة ثم يقرؤه بدون إنترنت، مع البحث داخل الكتاب والانتقال لصفحة والعلامات المرجعية. ومن «المحتوى بدون إنترنت» يمكن تحميل كل كتب الصف دفعة واحدة.
+
+> **حقوق النشر:** الكتب ملك وزارة التربية والتعليم الفلسطينية. توزيعها مجانًا لأغراض تعليمية متوافق مع إتاحتها العامة، لكن يُنصح بالحصول على موافقة مكتوبة من الوزارة أو مركز المناهج قبل الإطلاق العام، والإشارة إلى المصدر في وصف التطبيق.
+
+> بدون خادم: يستطيع الطالب إضافة أي كتاب PDF موجود على جهازه (مثلًا وصله عبر واتساب) من صفحة المادة ← «إضافة كتاب PDF من جهازي».
+
+## 5) إضافة أو تعديل المحتوى
 التسلسل: `grades` ← `subjects` ← `units` ← `lessons` ← `questions`، ومع كل مادة `books` + `book_pages` و`exams`.
 1. أضف/عدّل الصفوف من **Table Editor** (أو من لوحة الإدارة في المرحلة الثانية).
 2. الدرس لا يظهر للطلاب إلا إذا كان `published = true`.
@@ -55,7 +85,7 @@ flutter run --dart-define=SUPABASE_URL=https://<ref>.supabase.co --dart-define=S
 
 > اختبار `test/data/content_test.dart` يفحص كل حزمة مرفقة (الإجابات ضمن الخيارات، عدم تكرار المعرّفات، كفاية الأسئلة للامتحانات…). يُنصح بتشغيله على أي حزمة جديدة قبل نشرها.
 
-## 5) الأمان
+## 6) الأمان
 - صلاحيات RLS: المحتوى للقراءة فقط للجميع، والكتابة للمشرفين (`profiles.role = 'admin'`) فقط.
 - نتائج الطالب لا يراها إلا هو، ووليّ أمره المرتبط، ومعلّم صفه.
 - `publish_pack` ممنوعة على غير المشرفين.

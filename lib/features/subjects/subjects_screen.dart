@@ -39,7 +39,7 @@ class SubjectsScreen extends ConsumerWidget {
                 child: Icon(subjectIcon(s.icon), color: Color(s.color)),
               ),
               title: Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: content == null
+              subtitle: content == null || content.lessons.isEmpty
                   ? Text(switch (books.where((b) => b.subjectId == s.id).length) {
                       0 => 'المحتوى قيد الإعداد',
                       1 => 'كتاب واحد',

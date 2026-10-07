@@ -230,43 +230,57 @@ class _PackSections extends ConsumerWidget {
             ),
           ),
         ],
-        const SectionTitle('خطة اليوم'),
-        Card(
-          child: Column(
-            children: [
-              if (stats.nextLesson != null)
-                _PlanTile(
-                  icon: Icons.menu_book,
-                  title: 'ادرس: ${stats.nextLesson!.title}',
-                  onTap: () => context.push('/lesson/${stats.nextLesson!.id}'),
-                ),
-              if (stats.recommendations.isNotEmpty)
-                _PlanTile(
-                  icon: Icons.replay,
-                  title: 'راجع: ${stats.recommendations.first.lesson.title}',
-                  onTap: () => launcher.testMe(context, lessonId: stats.recommendations.first.lesson.id),
-                ),
-              _PlanTile(
-                key: const Key('daily_challenge'),
-                icon: stats.challengeDoneToday ? Icons.check_circle : Icons.emoji_events,
-                title: stats.challengeDoneToday
-                    ? 'أنجزت تحدي اليوم!'
-                    : 'تحدي اليوم: ${QuizLauncher.challengeSize} أسئلة',
-                onTap: stats.challengeDoneToday ? null : () => launcher.dailyChallenge(context),
-              ),
-            ],
-          ),
-        ),
-        const SectionTitle('تقدّمك'),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: LabeledProgress(
-              label: 'أكملت ${stats.completedLessons} من ${stats.totalLessons} درسًا',
-              value: stats.completion,
+        if (pack.lessons.isEmpty) ...[
+          const SectionTitle('كتب صفك'),
+          Card(
+            child: ListTile(
+              key: const Key('books_ready'),
+              leading: const Icon(Icons.picture_as_pdf, size: 36),
+              title: const Text('الكتب المدرسية متوفرة'),
+              subtitle: const Text('حمّلها مرة واحدة واقرأها بدون إنترنت. الدروس والأسئلة قيد الإعداد.'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('/subjects'),
             ),
           ),
-        ),
+        ] else ...[
+          const SectionTitle('خطة اليوم'),
+          Card(
+            child: Column(
+              children: [
+                if (stats.nextLesson != null)
+                  _PlanTile(
+                    icon: Icons.menu_book,
+                    title: 'ادرس: ${stats.nextLesson!.title}',
+                    onTap: () => context.push('/lesson/${stats.nextLesson!.id}'),
+                  ),
+                if (stats.recommendations.isNotEmpty)
+                  _PlanTile(
+                    icon: Icons.replay,
+                    title: 'راجع: ${stats.recommendations.first.lesson.title}',
+                    onTap: () => launcher.testMe(context, lessonId: stats.recommendations.first.lesson.id),
+                  ),
+                _PlanTile(
+                  key: const Key('daily_challenge'),
+                  icon: stats.challengeDoneToday ? Icons.check_circle : Icons.emoji_events,
+                  title: stats.challengeDoneToday
+                      ? 'أنجزت تحدي اليوم!'
+                      : 'تحدي اليوم: ${QuizLauncher.challengeSize} أسئلة',
+                  onTap: stats.challengeDoneToday ? null : () => launcher.dailyChallenge(context),
+                ),
+              ],
+            ),
+          ),
+          const SectionTitle('تقدّمك'),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: LabeledProgress(
+                label: 'أكملت ${stats.completedLessons} من ${stats.totalLessons} درسًا',
+                value: stats.completion,
+              ),
+            ),
+          ),
+        ],
         SectionTitle(
           'موادي',
           trailing: TextButton(onPressed: () => context.go('/subjects'), child: const Text('الكل')),

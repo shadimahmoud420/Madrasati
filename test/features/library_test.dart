@@ -165,4 +165,34 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('تعذّر تحميل الكتاب'), findsOneWidget);
   });
+
+  testWidgets('a grade with only official books (no lessons yet) shows its books', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(430, 932));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final c = ProviderContainer(
+      overrides: await testOverrides(prefs: await testPrefs({'profile.grade': 'g7', 'profile.name': 'سلمى'}), db: db),
+    );
+    addTearDown(c.dispose);
+    await tester.runAsync(() async {
+      // Pack exactly as published by publish_pack() for a books-only grade.
+      await c.read(packStoreProvider).save(File('test/fixtures/g7_books_only.json').readAsStringSync());
+      c.read(packRevisionProvider.notifier).bump();
+    });
+    await tester.pumpWidget(UncontrolledProviderScope(container: c, child: const MadrasatiApp()));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('books_ready')), findsOneWidget);
+    expect(find.byKey(const Key('daily_challenge')), findsNothing);
+
+    await tester.tap(find.text('المواد'));
+    await tester.pumpAndSettle();
+    expect(find.text('كتاب واحد'), findsNWidgets(2));
+
+    c.read(routerProvider).push('/subject/g7_math');
+    await tester.pumpAndSettle();
+    // Semester 2 book is hidden in semester 1 and shown in semester 2.
+    expect(find.byKey(const Key('book_g7_math_s2_y')), findsNothing);
+    await tester.tap(find.text('الفصل الثاني'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('book_g7_math_s2_y')), findsOneWidget);
+  });
 }
