@@ -22,6 +22,7 @@ class BookTile extends ConsumerWidget {
       if (book.semester != null) 'الفصل ${book.semester == 1 ? 'الأول' : 'الثاني'}',
       if (!book.isPdf) 'نسخة نصية من الدروس',
       if (book.localOnly) 'من جهازك',
+      if (book.bundled) 'داخل التطبيق • يعمل بدون إنترنت',
       if (downloaded != null) 'متوفر بدون إنترنت • ${formatSize(downloaded)}',
       if (downloaded == null && book.pdfUrl != null)
         'غير محمّل${book.sizeBytes == null ? '' : ' • ${formatSize(book.sizeBytes)}'}',
@@ -32,7 +33,7 @@ class BookTile extends ConsumerWidget {
         dimension: 28,
         child: CircularProgressIndicator(value: progress == 0 ? null : progress, strokeWidth: 3),
       );
-    } else if (downloaded != null || !book.isPdf) {
+    } else if (downloaded != null || !book.isPdf || book.bundled) {
       trailing = Icon(Icons.offline_pin, color: scheme.primary);
     } else if (showDownloadButton) {
       trailing = IconButton(

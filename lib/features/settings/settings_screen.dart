@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/avatars.dart';
 import '../../core/providers.dart';
+import '../books/library.dart';
 import '../progress/learner_stats.dart';
 import 'reminder_service.dart';
 
@@ -112,6 +113,17 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
+          SwitchListTile(
+            key: const Key('auto_books'),
+            secondary: const Icon(Icons.download_for_offline_outlined),
+            title: const Text('تحميل كتب صفي تلقائيًا'),
+            subtitle: const Text('عند توفر الإنترنت، لتبقى متاحة دائمًا بدون إنترنت'),
+            value: settings.autoDownloadBooks,
+            onChanged: (on) async {
+              await ref.read(settingsProvider.notifier).setAutoDownloadBooks(on);
+              if (on) ref.read(autoBookDownloaderProvider).run();
+            },
+          ),
           ListTile(
             leading: const Icon(Icons.dark_mode_outlined),
             title: const Text('المظهر'),

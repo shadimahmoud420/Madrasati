@@ -152,23 +152,34 @@ final currentGradeProvider = Provider<GradeInfo?>((ref) {
 // ---------------------------------------------------------------- settings
 
 class AppSettings {
-  const AppSettings({this.themeMode = ThemeMode.system, this.remindersOn = false, this.reminderHour = 17});
+  const AppSettings({
+    this.themeMode = ThemeMode.system,
+    this.remindersOn = false,
+    this.reminderHour = 17,
+    this.autoDownloadBooks = true,
+  });
 
   final ThemeMode themeMode;
   final bool remindersOn;
   final int reminderHour;
 
-  AppSettings copyWith({ThemeMode? themeMode, bool? remindersOn, int? reminderHour}) => AppSettings(
-    themeMode: themeMode ?? this.themeMode,
-    remindersOn: remindersOn ?? this.remindersOn,
-    reminderHour: reminderHour ?? this.reminderHour,
-  );
+  /// Download the signed-in student's grade books whenever online.
+  final bool autoDownloadBooks;
+
+  AppSettings copyWith({ThemeMode? themeMode, bool? remindersOn, int? reminderHour, bool? autoDownloadBooks}) =>
+      AppSettings(
+        themeMode: themeMode ?? this.themeMode,
+        remindersOn: remindersOn ?? this.remindersOn,
+        reminderHour: reminderHour ?? this.reminderHour,
+        autoDownloadBooks: autoDownloadBooks ?? this.autoDownloadBooks,
+      );
 }
 
 class SettingsController extends Notifier<AppSettings> {
   static const _kTheme = 'settings.theme';
   static const _kReminders = 'settings.reminders';
   static const _kHour = 'settings.reminderHour';
+  static const _kAutoBooks = 'settings.autoDownloadBooks';
 
   SharedPreferencesWithCache get _prefs => ref.read(sharedPreferencesProvider);
 
@@ -177,7 +188,13 @@ class SettingsController extends Notifier<AppSettings> {
     themeMode: ThemeMode.values.elementAtOrNull(_prefs.getInt(_kTheme) ?? 0) ?? ThemeMode.system,
     remindersOn: _prefs.getBool(_kReminders) ?? false,
     reminderHour: _prefs.getInt(_kHour) ?? 17,
+    autoDownloadBooks: _prefs.getBool(_kAutoBooks) ?? true,
   );
+
+  Future<void> setAutoDownloadBooks(bool on) async {
+    await _prefs.setBool(_kAutoBooks, on);
+    state = state.copyWith(autoDownloadBooks: on);
+  }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs.setInt(_kTheme, mode.index);

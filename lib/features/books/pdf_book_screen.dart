@@ -85,10 +85,12 @@ class _DownloadPrompt extends ConsumerWidget {
 }
 
 class _PdfReader extends ConsumerStatefulWidget {
-  const _PdfReader({required this.book, required this.path, this.initialPage});
+  const _PdfReader({required this.book, this.path, this.initialPage});
 
   final Book book;
-  final String path;
+
+  /// Downloaded or imported file; null for books bundled in the app.
+  final String? path;
   final int? initialPage;
 
   @override
@@ -97,7 +99,31 @@ class _PdfReader extends ConsumerStatefulWidget {
 
 class _PdfReaderState extends ConsumerState<_PdfReader> {
   final _controller = PdfViewerController();
-  late final _searcher = PdfTextSearcher(_controller)..addListener(_update);
+
+  /// Created once the document is open: the searcher needs the loaded
+  /// document and crashes the screen if built earlier.
+  PdfTextSearcher? _searcher;
+
+  /// Built once: a new params object on every rebuild makes the viewer
+  /// restart loading the document.
+  PdfViewerParams? _params;
+
+  PdfViewerParams _buildParams(Color background) => PdfViewerParams(
+    backgroundColor: background,
+    onViewerReady: (_, _) {
+      _searcher ??= PdfTextSearcher(_controller)..addListener(_update);
+      _update();
+    },
+    onPageChanged: (page) {
+      if (page != null && mounted) setState(() => _page = page);
+    },
+    pagePaintCallbacks: [(canvas, rect, page) => _searcher?.pageTextMatchPaintCallback(canvas, rect, page)],
+    errorBannerBuilder: (context, error, stackTrace, documentRef) => const EmptyState(
+      icon: Icons.broken_image_outlined,
+      title: 'تعذّر فتح الكتاب',
+      message: 'قد يكون الملف تالفًا. احذفه من القائمة ثم حمّله من جديد.',
+    ),
+  );
   final _query = TextEditingController();
   late int _page = widget.initialPage ?? 1;
   bool _searching = false;
@@ -109,7 +135,7 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
   @override
   void dispose() {
     _searcher
-      ..removeListener(_update)
+      ?..removeListener(_update)
       ..dispose();
     _query.dispose();
     super.dispose();
@@ -148,7 +174,9 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
     if (page != null) await _goTo(page);
   }
 
-  Future<void> _showBookmarks(List<int> pages) async {
+  Future<void> _showBookmarks() async {
+    final pages = await ref.read(_pdfBookmarksProvider(widget.book.id).future);
+    if (!mounted) return;
     final page = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
@@ -195,9 +223,8 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
   @override
   Widget build(BuildContext context) {
     final book = widget.book;
-    final bookmarks = ref.watch(_pdfBookmarksProvider(book.id)).value ?? const <int>[];
-    final marked = bookmarks.contains(_page);
-    final matches = _searcher.matches.length;
+    final searcher = _searcher;
+    final matches = searcher?.matches.length ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: _searching
@@ -209,7 +236,7 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
                   border: InputBorder.none,
                   filled: false,
                 ),
-                onChanged: (v) => _searcher.startTextSearch(v.trim(), goToFirstMatch: true),
+                onChanged: (v) => searcher?.startTextSearch(v.trim(), goToFirstMatch: true),
               )
             : Text(book.title, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
@@ -220,29 +247,23 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
               _searching = !_searching;
               if (!_searching) {
                 _query.clear();
-                _searcher.resetTextSearch();
+                searcher?.resetTextSearch();
               }
             }),
           ),
           if (!_searching) ...[
-            IconButton(
-              tooltip: marked ? 'إزالة العلامة' : 'إضافة علامة مرجعية',
-              icon: Icon(marked ? Icons.bookmark : Icons.bookmark_add_outlined),
-              onPressed: () async {
-                await ref.read(progressRepositoryProvider).toggleBookmark(book.id, _page, ref.read(clockProvider)());
-                ref.invalidate(_pdfBookmarksProvider(book.id));
-              },
-            ),
+            _BookmarkButton(bookId: book.id, page: _page),
             PopupMenuButton<String>(
               onSelected: (v) => switch (v) {
                 'goto' => _askPage(),
-                'marks' => _showBookmarks(bookmarks),
+                'marks' => _showBookmarks(),
                 _ => _deleteDownload(),
               },
               itemBuilder: (_) => [
                 const PopupMenuItem(value: 'goto', child: Text('الانتقال إلى صفحة')),
                 const PopupMenuItem(value: 'marks', child: Text('العلامات المرجعية')),
-                PopupMenuItem(value: 'delete', child: Text(book.localOnly ? 'إزالة الكتاب' : 'حذف من الجهاز')),
+                if (!book.bundled)
+                  PopupMenuItem(value: 'delete', child: Text(book.localOnly ? 'إزالة الكتاب' : 'حذف من الجهاز')),
               ],
             ),
           ],
@@ -251,24 +272,19 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
       body: Directionality(
         // PDF pages keep their own layout; scroll gestures stay natural.
         textDirection: TextDirection.ltr,
-        child: PdfViewer.file(
-          widget.path,
-          controller: _controller,
-          initialPageNumber: widget.initialPage ?? 1,
-          params: PdfViewerParams(
-            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            onViewerReady: (_, _) => _update(),
-            onPageChanged: (page) {
-              if (page != null && mounted) setState(() => _page = page);
-            },
-            pagePaintCallbacks: [_searcher.pageTextMatchPaintCallback],
-            errorBannerBuilder: (context, error, stackTrace, documentRef) => const EmptyState(
-              icon: Icons.broken_image_outlined,
-              title: 'تعذّر فتح الكتاب',
-              message: 'قد يكون الملف تالفًا. احذفه من القائمة ثم حمّله من جديد.',
-            ),
-          ),
-        ),
+        child: widget.path == null
+            ? PdfViewer.asset(
+                widget.book.asset!,
+                controller: _controller,
+                initialPageNumber: widget.initialPage ?? 1,
+                params: _params ??= _buildParams(Theme.of(context).colorScheme.surfaceContainerHighest),
+              )
+            : PdfViewer.file(
+                widget.path!,
+                controller: _controller,
+                initialPageNumber: widget.initialPage ?? 1,
+                params: _params ??= _buildParams(Theme.of(context).colorScheme.surfaceContainerHighest),
+              ),
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
@@ -278,29 +294,50 @@ class _PdfReaderState extends ConsumerState<_PdfReader> {
                   children: [
                     Expanded(
                       child: Text(
-                        _searcher.isSearching
+                        searcher?.isSearching ?? false
                             ? 'جارٍ البحث…'
                             : matches == 0
                             ? 'لا توجد نتائج'
-                            : 'النتيجة ${(_searcher.currentIndex ?? 0) + 1} من $matches',
+                            : 'النتيجة ${(searcher?.currentIndex ?? 0) + 1} من $matches',
                         textAlign: TextAlign.center,
                       ),
                     ),
                     IconButton(
                       tooltip: 'السابق',
                       icon: const Icon(Icons.keyboard_arrow_up),
-                      onPressed: matches == 0 ? null : _searcher.goToPrevMatch,
+                      onPressed: matches == 0 ? null : searcher!.goToPrevMatch,
                     ),
                     IconButton(
                       tooltip: 'التالي',
                       icon: const Icon(Icons.keyboard_arrow_down),
-                      onPressed: matches == 0 ? null : _searcher.goToNextMatch,
+                      onPressed: matches == 0 ? null : searcher!.goToNextMatch,
                     ),
                   ],
                 )
               : TextButton(onPressed: _askPage, child: Text(_pageCount == 0 ? '' : 'صفحة $_page من $_pageCount')),
         ),
       ),
+    );
+  }
+}
+
+/// Kept separate so loading bookmarks never rebuilds the PDF viewer.
+class _BookmarkButton extends ConsumerWidget {
+  const _BookmarkButton({required this.bookId, required this.page});
+
+  final String bookId;
+  final int page;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final marked = ref.watch(_pdfBookmarksProvider(bookId)).value?.contains(page) ?? false;
+    return IconButton(
+      tooltip: marked ? 'إزالة العلامة' : 'إضافة علامة مرجعية',
+      icon: Icon(marked ? Icons.bookmark : Icons.bookmark_add_outlined),
+      onPressed: () async {
+        await ref.read(progressRepositoryProvider).toggleBookmark(bookId, page, ref.read(clockProvider)());
+        ref.invalidate(_pdfBookmarksProvider(bookId));
+      },
     );
   }
 }

@@ -195,4 +195,74 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('book_g7_math_s2_y')), findsOneWidget);
   });
+
+  test('books bundled in the app are listed for their grade only, with nothing to download', () async {
+    final bundled = parseBundledBooks(
+      jsonEncode([
+        {
+          'id': 'bundled_1',
+          'gradeId': 'g9',
+          'subjectId': 'g9_arabic',
+          'semester': 1,
+          'title': 'اللغة العربية – الجزء الأول',
+          'asset': 'assets/books/g9/arabic/s1/a.pdf',
+          'sizeBytes': 100,
+        },
+        {
+          'id': 'bundled_2',
+          'gradeId': 'g4',
+          'subjectId': 'g4_math',
+          'semester': 1,
+          'title': 'رياضيات الرابع',
+          'asset': 'assets/books/g4/math/s1/b.pdf',
+        },
+      ]),
+    );
+    final c = ProviderContainer(
+      overrides: [
+        ...await testOverrides(prefs: await testPrefs({'profile.grade': 'g9', 'profile.name': 'محمود'}), db: db),
+        bundledBooksProvider.overrideWithValue(bundled),
+      ],
+    );
+    addTearDown(c.dispose);
+    final books = await c.read(gradeBooksProvider.future);
+    final arabic = books.singleWhere((b) => b.id == 'bundled_1');
+    expect(arabic.bundled, isTrue);
+    expect(arabic.isPdf, isTrue);
+    expect(books.any((b) => b.id == 'bundled_2'), isFalse);
+  });
+
+  test('the student\'s grade books download automatically when online', () async {
+    var requests = 0;
+    final c = await container(
+      MockClient((req) async {
+        requests++;
+        return http.Response.bytes(_pdf, 200);
+      }),
+    );
+    c.listen(autoBookDownloaderProvider, (_, _) {}); // as the app does
+    for (var i = 0; i < 50 && !(await c.read(downloadedBooksProvider.future)).containsKey('g9_math_s1'); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+    }
+    expect(await c.read(downloadedBooksProvider.future), contains('g9_math_s1'));
+
+    // Already there: running again downloads nothing.
+    final before = requests;
+    await c.read(autoBookDownloaderProvider).run();
+    expect(requests, before);
+  });
+
+  test('automatic download can be turned off', () async {
+    var requests = 0;
+    final c = await container(
+      MockClient((req) async {
+        requests++;
+        return http.Response.bytes(_pdf, 200);
+      }),
+    );
+    await c.read(settingsProvider.notifier).setAutoDownloadBooks(false);
+    c.listen(autoBookDownloaderProvider, (_, _) {});
+    await c.read(autoBookDownloaderProvider).run();
+    expect(requests, 0);
+  });
 }

@@ -3,6 +3,8 @@
   assets/content/catalog.json        every grade (1–12) and its subjects
   assets/content/packs/<grade>.json  demo lessons, books, questions, exams
   assets/content/images/*.png        question images (needs Pillow)
+  assets/content/bundled_books.json  official PDF books shipped inside the app,
+                                     found in assets/books/<grade>/<subject>/<s1|s2|all>/<title>.pdf
 
 Run: python3 tool/build_content.py
 
@@ -12,6 +14,7 @@ replace them with approved content from the admin side (see
 docs/CONTENT_GUIDE.md). Bump PACK_VERSION whenever a bundled pack changes so
 installed apps re-import it.
 """
+import hashlib
 import json
 import os
 
@@ -651,6 +654,63 @@ def write_seed(cat):
         f.write("\n".join(out) + "\n")
 
 
+SEMESTER_DIRS = {"s1": 1, "s2": 2, "all": None}
+
+
+def bundled_books(cat):
+    """Scans assets/books/ and registers every PDF as a book that ships with
+    the app. Also lists each folder in pubspec.yaml, as Flutter requires."""
+    root = os.path.join(ROOT, "assets", "books")
+    subjects = {g["id"]: {s["key"]: s["id"] for s in g["subjects"]} for g in cat["grades"]}
+    books, folders, problems = [], set(), []
+    for dirpath, _, files in os.walk(root):
+        for name in sorted(files):
+            if not name.lower().endswith(".pdf"):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, name), root)
+            parts = rel.split(os.sep)
+            if len(parts) != 4 or parts[0] not in subjects or parts[1] not in subjects[parts[0]] \
+                    or parts[2] not in SEMESTER_DIRS:
+                problems.append(rel)
+                continue
+            grade, subject, semester, _ = parts
+            with open(os.path.join(dirpath, name), "rb") as f:
+                if not f.read(5) == b"%PDF-":
+                    problems.append(rel + " (ليس PDF صالحًا)")
+                    continue
+            folders.add("/".join(["assets", "books", grade, subject, semester]) + "/")
+            books.append({
+                "id": "bundled_" + hashlib.sha1(rel.encode("utf-8")).hexdigest()[:12],
+                "gradeId": grade,
+                "subjectId": subjects[grade][subject],
+                "semester": SEMESTER_DIRS[semester],
+                "title": os.path.splitext(name)[0].strip(),
+                "asset": "/".join(["assets", "books"] + parts),
+                "sizeBytes": os.path.getsize(os.path.join(dirpath, name)),
+            })
+    for p in problems:
+        print("⚠️  تم تجاهل (المسار يجب أن يكون assets/books/<الصف>/<المادة>/<s1|s2|all>/<الكتاب>.pdf):", p)
+    with open(os.path.join(OUT, "bundled_books.json"), "w", encoding="utf-8") as f:
+        json.dump(books, f, ensure_ascii=False, indent=1)
+    update_pubspec_assets(sorted(folders))
+    total = sum(b["sizeBytes"] for b in books) / 1024 / 1024
+    print(f"Bundled books: {len(books)} ({total:.0f} MB)")
+
+
+def update_pubspec_assets(folders):
+    path = os.path.join(ROOT, "pubspec.yaml")
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    start, end = "    # bundled-books:start\n", "    # bundled-books:end\n"
+    block = start + "".join(f"    - {d}\n" for d in folders) + end
+    if start in text:
+        text = text[:text.index(start)] + block + text[text.index(end) + len(end):]
+    else:
+        text = text.replace("    - assets/content/images/\n", "    - assets/content/images/\n" + block, 1)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
 def main():
     os.makedirs(os.path.join(OUT, "packs"), exist_ok=True)
     os.makedirs(os.path.join(OUT, "images"), exist_ok=True)
@@ -661,6 +721,7 @@ def main():
     with open(os.path.join(OUT, "catalog.json"), "w", encoding="utf-8") as f:
         json.dump(cat, f, ensure_ascii=False, indent=1)
     write_seed(cat)
+    bundled_books(cat)
     make_images()
     print("Wrote catalog + packs:", ", ".join(PACKS))
 

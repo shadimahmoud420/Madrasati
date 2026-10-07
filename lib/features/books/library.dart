@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,19 @@ import '../../data/models.dart';
 /// Folder holding downloaded and imported PDF books (overridden in `main()`).
 final booksDirProvider = Provider<Directory>((ref) => throw UnimplementedError());
 final httpClientProvider = Provider<http.Client>((ref) => http.Client());
+
+/// Official books shipped inside the app (assets/content/bundled_books.json),
+/// loaded in `main()`.
+final bundledBooksProvider = Provider<List<({String gradeId, Book book})>>((ref) => const []);
+
+List<({String gradeId, Book book})> parseBundledBooks(String json) => [
+  for (final b in jsonDecode(json) as List)
+    (
+      gradeId: (b as Map<String, dynamic>)['gradeId'] as String,
+      book: Book.fromJson(b, subjectId: b['subjectId'] as String),
+    ),
+];
+
 final localBookStoreProvider = Provider<LocalBookStore>((ref) => LocalBookStore(ref.watch(appDatabaseProvider)));
 
 class _Revision extends Notifier<int> {
@@ -30,10 +44,13 @@ final gradeBooksProvider = FutureProvider<List<Book>>((ref) async {
   ref.watch(libraryRevisionProvider);
   final grade = ref.watch(currentGradeProvider);
   final local = ref.watch(localBookStoreProvider);
+  final bundled = ref.watch(bundledBooksProvider);
   final pack = await ref.watch(packProvider.future);
   if (grade == null) return const [];
   final subjectIds = {for (final s in grade.subjects) s.id};
   return [
+    for (final b in bundled)
+      if (b.gradeId == grade.id) b.book,
     ...?pack?.books,
     for (final b in await local.all())
       if (subjectIds.contains(b.subjectId)) b,
@@ -161,6 +178,42 @@ class BookLibrary extends Notifier<Map<String, double>> {
 }
 
 final bookLibraryProvider = NotifierProvider<BookLibrary, Map<String, double>>(BookLibrary.new);
+
+/// Keeps the signed-in student's official books on the device: whenever the
+/// book list changes (new student, new content) or the app returns to the
+/// foreground, missing books download one by one in the background. Stops
+/// quietly at the first failure (usually no internet) and retries later.
+class AutoBookDownloader {
+  AutoBookDownloader(this.ref) {
+    ref.listen(gradeBooksProvider, (_, next) {
+      if (next.hasValue) run();
+    }, fireImmediately: true);
+  }
+
+  final Ref ref;
+  bool _running = false;
+
+  Future<void> run() async {
+    if (_running || !ref.read(settingsProvider).autoDownloadBooks) return;
+    _running = true;
+    try {
+      final books = await ref.read(gradeBooksProvider.future);
+      if (!ref.mounted) return;
+      final have = await ref.read(downloadedBooksProvider.future);
+      for (final b in books) {
+        if (b.pdfUrl == null || have.containsKey(b.id)) continue;
+        if (!ref.mounted || !ref.read(settingsProvider).autoDownloadBooks) break;
+        await ref.read(bookLibraryProvider.notifier).download(b);
+      }
+    } on DownloadException {
+      // Offline or server trouble: try again on the next trigger.
+    } finally {
+      _running = false;
+    }
+  }
+}
+
+final autoBookDownloaderProvider = Provider<AutoBookDownloader>(AutoBookDownloader.new);
 
 String formatSize(int? bytes) {
   if (bytes == null || bytes <= 0) return '';

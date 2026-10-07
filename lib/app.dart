@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/providers.dart';
 import 'core/router.dart';
 import 'core/theme.dart';
+import 'features/books/library.dart';
 
 class MadrasatiApp extends ConsumerStatefulWidget {
   const MadrasatiApp({super.key});
@@ -30,12 +31,16 @@ class _MadrasatiAppState extends ConsumerState<MadrasatiApp> with WidgetsBinding
   /// foreground, try to pull new content and push offline results.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) ref.read(contentSyncProvider).syncAll();
+    if (state == AppLifecycleState.resumed) {
+      ref.read(contentSyncProvider).syncAll();
+      ref.read(autoBookDownloaderProvider).run();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final stage = ref.watch(currentGradeProvider)?.stage;
+    ref.watch(autoBookDownloaderProvider);
     return MaterialApp.router(
       title: 'مدرستي',
       debugShowCheckedModeBanner: false,

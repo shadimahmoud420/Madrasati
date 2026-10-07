@@ -299,6 +299,7 @@ class Book {
     this.semester,
     this.sizeBytes,
     this.localOnly = false,
+    this.asset,
   });
 
   factory Book.fromJson(Map<String, dynamic> json, {required String subjectId}) => Book(
@@ -308,6 +309,7 @@ class Book {
     pdfUrl: json['pdfUrl'] as String?,
     semester: json['semester'] as int?,
     sizeBytes: (json['sizeBytes'] as num?)?.toInt(),
+    asset: json['asset'] as String?,
     pages: [
       for (final p in json['pages'] as List? ?? const [])
         BookPage(
@@ -332,10 +334,16 @@ class Book {
   /// A PDF the student added from their own device.
   final bool localOnly;
 
+  /// A PDF shipped inside the app (`assets/books/...`): always available,
+  /// nothing to download.
+  final String? asset;
+
+  bool get bundled => asset != null;
+
   /// Text pages built from the lessons, used when there is no PDF.
   final List<BookPage> pages;
 
-  bool get isPdf => pdfUrl != null || localOnly;
+  bool get isPdf => pdfUrl != null || localOnly || asset != null;
 }
 
 class Exam {

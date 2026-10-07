@@ -125,7 +125,7 @@ class _GradeLibrary extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final books = (ref.watch(gradeBooksProvider).value ?? const <Book>[]).where((b) => b.isPdf).toList();
+    final books = (ref.watch(gradeBooksProvider).value ?? const <Book>[]).where((b) => b.isPdf && !b.bundled).toList();
     final downloaded = ref.watch(downloadedBooksProvider).value ?? const <String, int>{};
     final missing = books.where((b) => b.pdfUrl != null && !downloaded.containsKey(b.id)).toList();
     final used = books.fold<int>(0, (sum, b) => sum + (downloaded[b.id] ?? 0));

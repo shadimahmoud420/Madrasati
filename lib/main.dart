@@ -37,6 +37,9 @@ Future<void> main() async {
       catalogProvider.overrideWithValue(catalog),
       initialProfilesProvider.overrideWithValue(profiles),
       booksDirProvider.overrideWithValue(booksDir),
+      bundledBooksProvider.overrideWithValue(
+        parseBundledBooks(await rootBundle.loadString('assets/content/bundled_books.json')),
+      ),
       reminderServiceProvider.overrideWithValue(LocalReminderService()),
       if (configured)
         backendProvider.overrideWith(

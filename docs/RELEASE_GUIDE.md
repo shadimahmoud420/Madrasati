@@ -68,3 +68,11 @@ flutter run            # جرّب على محاكي أو جهاز
 - [ ] امتحان تجريبي حتى انتهاء الوقت: يُسلَّم تلقائيًا.
 - [ ] فعّل التذكير اليومي ثم ارفض الإذن: رسالة واضحة دون تعطل.
 - [ ] بعد أي تعديل على المحتوى المرفق: ارفع `PACK_VERSION` في `tool/build_content.py` وشغّله.
+
+## 8) اختبار قارئ PDF محليًا (اختياري للمطورين)
+اختبار `test/widget/pdf_reader_test.dart` يفتح كتابًا حقيقيًا، ويحتاج مكتبة PDFium بجانب محرك Flutter:
+```bash
+pip download --no-deps --only-binary=:all: --platform manylinux_2_17_x86_64 pypdfium2 -d /tmp/pdfium
+unzip -j /tmp/pdfium/pypdfium2*.whl 'pypdfium2_raw/libpdfium.so' -d "$(dirname $(which flutter))/cache/artifacts/engine/linux-x64/lib/"
+```
+بدونها يُتخطّى هذا الاختبار تلقائيًا (كما في Codemagic).
