@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:madrasati/features/books/library.dart';
 import 'package:madrasati/data/models.dart';
 
 import '../helpers/harness.dart';
@@ -81,4 +84,15 @@ void main() {
       });
     });
   }
+
+  test('books shipped with or linked from the app point to real grades and subjects', () {
+    final books = parseBundledBooks(File('assets/content/bundled_books.json').readAsStringSync());
+    for (final b in books) {
+      final grade = catalog.grade(b.gradeId);
+      expect(grade, isNotNull, reason: b.book.id);
+      expect(grade!.subjects.map((s) => s.id), contains(b.book.subjectId), reason: b.book.id);
+      expect(b.book.isPdf, isTrue, reason: b.book.id);
+      if (b.book.pdfUrl case final url?) expect(Uri.parse(url).isScheme('https'), isTrue, reason: url);
+    }
+  });
 }

@@ -14,9 +14,11 @@ replace them with approved content from the admin side (see
 docs/CONTENT_GUIDE.md). Bump PACK_VERSION whenever a bundled pack changes so
 installed apps re-import it.
 """
+import csv
 import hashlib
 import json
 import os
+import re
 
 ROOT = os.path.join(os.path.dirname(__file__), "..")
 OUT = os.path.join(ROOT, "assets", "content")
@@ -690,11 +692,56 @@ def bundled_books(cat):
             })
     for p in problems:
         print("⚠️  تم تجاهل (المسار يجب أن يكون assets/books/<الصف>/<المادة>/<s1|s2|all>/<الكتاب>.pdf):", p)
+    books += linked_books(subjects)
     with open(os.path.join(OUT, "bundled_books.json"), "w", encoding="utf-8") as f:
         json.dump(books, f, ensure_ascii=False, indent=1)
     update_pubspec_assets(sorted(folders))
-    total = sum(b["sizeBytes"] for b in books) / 1024 / 1024
+    total = sum(b.get("sizeBytes", 0) for b in books) / 1024 / 1024
     print(f"Bundled books: {len(books)} ({total:.0f} MB)")
+
+
+def direct_download_url(url):
+    """Turns a Google Drive share/download link into a direct download that
+    also skips Drive's "can't scan for viruses" page on large files."""
+    m = re.search(r"drive\.google\.com/file/d/([\w-]+)", url) or re.search(r"[?&]id=([\w-]+)", url)
+    if m and ("drive.google.com" in url or "drive.usercontent.google.com" in url):
+        return f"https://drive.usercontent.google.com/download?id={m.group(1)}&export=download&confirm=t"
+    return url
+
+
+def linked_books(subjects):
+    """Books listed in assets/books/links.csv (one per line):
+        grade,subject,semester,title,url
+    e.g.  g5,arabic,s1,اللغة العربية – الجزء الأول,https://drive.google.com/file/d/…/view
+    The app downloads them on the student's phone (automatically for their
+    grade), so the files never need to be uploaded anywhere else."""
+    path = os.path.join(ROOT, "assets", "books", "links.csv")
+    if not os.path.exists(path):
+        return []
+    books = []
+    with open(path, encoding="utf-8-sig") as f:
+        for n, row in enumerate(csv.reader(f), 1):
+            if not row or row[0].strip().startswith("#") or row[0].strip() == "grade":
+                continue
+            if len(row) < 5:
+                print(f"⚠️  links.csv سطر {n}: يجب 5 أعمدة: الصف,المادة,الفصل,العنوان,الرابط")
+                continue
+            grade, subject, semester, title, url = (c.strip() for c in row[:5])
+            if grade not in subjects or subject not in subjects[grade] or semester not in SEMESTER_DIRS:
+                print(f"⚠️  links.csv سطر {n}: صف/مادة/فصل غير صحيح: {grade},{subject},{semester}")
+                continue
+            if "mediafire.com" in url and "download" in url.split("/")[2]:
+                print(f"⚠️  links.csv سطر {n}: روابط MediaFire المباشرة تنتهي صلاحيتها، استخدم رابط Google Drive")
+            books.append({
+                "id": "link_" + hashlib.sha1(url.encode("utf-8")).hexdigest()[:12],
+                "gradeId": grade,
+                "subjectId": subjects[grade][subject],
+                "semester": SEMESTER_DIRS[semester],
+                "title": title,
+                "pdfUrl": direct_download_url(url),
+            })
+    print(f"Linked books: {len(books)}")
+    return books
 
 
 def update_pubspec_assets(folders):
