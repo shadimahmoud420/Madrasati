@@ -1,0 +1,113 @@
+# Codemagic CI: builds Madrasati and uploads it to TestFlight / Google Play
+# without needing a Mac. Setup steps: docs/RELEASE_GUIDE.md.
+workflows:
+  ios-testflight:
+    name: iOS → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      # App Store Connect API key saved in Codemagic. One team key works for
+      # every app on the account, so the StoryCraft key is reused here.
+      app_store_connect: StoryCraft ASC
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        # CERTIFICATE_PRIVATE_KEY (same group as the other apps).
+        - ios_signing
+        # When the backend is ready, create a group "madrasati_backend" with
+        # SUPABASE_URL and SUPABASE_ANON_KEY and uncomment the next line.
+        # Without it the build runs offline on the bundled content.
+        # - madrasati_backend
+      vars:
+        BUNDLE_ID: com.madrasatigaza.madrasati
+        # App Store Connect → App → App Information → Apple ID. Leave empty
+        # until the app record exists; build numbers then use Codemagic's.
+        APP_STORE_APPLE_ID: ""
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Checks
+        script: |
+          flutter analyze
+          flutter test
+      - name: Code signing
+        script: |
+          # Creates (first run) or reuses the distribution certificate and the
+          # App Store provisioning profile for this bundle id.
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          # Next build number = latest TestFlight build + 1; falls back to
+          # Codemagic's counter when the lookup isn't possible yet.
+          if [ -n "$APP_STORE_APPLE_ID" ] \
+             && LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null) \
+             && [[ "$LATEST" =~ ^[0-9]+$ ]]; then
+            BUILD=$((LATEST + 1))
+          else
+            BUILD=${PROJECT_BUILD_NUMBER:-1}
+          fi
+          echo "Build number: $BUILD"
+          flutter build ipa --release \
+            --build-number=$BUILD \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}" \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Internal testers get every build without Beta App Review. Set to
+        # true after filling TestFlight → Test Information to also send
+        # builds to external testers.
+        submit_to_testflight: false
+
+  android-internal:
+    name: Android → Google Play (internal testing)
+    max_build_duration: 45
+    instance_type: linux_x2
+    environment:
+      flutter: stable
+      # Upload keystore added in Codemagic → Team → Code signing identities.
+      android_signing:
+        - madrasati_upload_key
+      groups:
+        # GCLOUD_SERVICE_ACCOUNT_CREDENTIALS (Play Console service account JSON).
+        - google_play
+        # - madrasati_backend
+    scripts:
+      - name: Get packages
+        script: flutter pub get
+      - name: Checks
+        script: |
+          flutter analyze
+          flutter test
+      - name: Signing properties
+        script: |
+          cat > android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
+      - name: Build AAB
+        script: |
+          flutter build appbundle --release \
+            --build-number=$PROJECT_BUILD_NUMBER \
+            --dart-define=SUPABASE_URL="${SUPABASE_URL:-}" \
+            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

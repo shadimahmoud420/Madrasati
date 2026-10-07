@@ -1,0 +1,823 @@
+{
+ "stages": [
+  {
+   "id": "lowerBasic",
+   "name": "المرحلة الأساسية الدنيا",
+   "hint": "من الصف الأول إلى الرابع"
+  },
+  {
+   "id": "upperBasic",
+   "name": "المرحلة الأساسية العليا",
+   "hint": "من الصف الخامس إلى العاشر"
+  },
+  {
+   "id": "secondary",
+   "name": "المرحلة الثانوية",
+   "hint": "الحادي عشر والثاني عشر (التوجيهي)"
+  }
+ ],
+ "grades": [
+  {
+   "id": "g1",
+   "number": 1,
+   "stage": "lowerBasic",
+   "stream": null,
+   "name": "الصف الأول",
+   "subjects": [
+    {
+     "id": "g1_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g1_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g1_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g1_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g1_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g1_national",
+     "key": "national",
+     "name": "التنشئة الوطنية والحياتية",
+     "icon": "flag",
+     "color": 4292617766
+    }
+   ]
+  },
+  {
+   "id": "g2",
+   "number": 2,
+   "stage": "lowerBasic",
+   "stream": null,
+   "name": "الصف الثاني",
+   "subjects": [
+    {
+     "id": "g2_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g2_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g2_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g2_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g2_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g2_national",
+     "key": "national",
+     "name": "التنشئة الوطنية والحياتية",
+     "icon": "flag",
+     "color": 4292617766
+    }
+   ]
+  },
+  {
+   "id": "g3",
+   "number": 3,
+   "stage": "lowerBasic",
+   "stream": null,
+   "name": "الصف الثالث",
+   "subjects": [
+    {
+     "id": "g3_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g3_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g3_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g3_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g3_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g3_national",
+     "key": "national",
+     "name": "التنشئة الوطنية والحياتية",
+     "icon": "flag",
+     "color": 4292617766
+    }
+   ]
+  },
+  {
+   "id": "g4",
+   "number": 4,
+   "stage": "lowerBasic",
+   "stream": null,
+   "name": "الصف الرابع",
+   "subjects": [
+    {
+     "id": "g4_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g4_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g4_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g4_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g4_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g4_national",
+     "key": "national",
+     "name": "التنشئة الوطنية والحياتية",
+     "icon": "flag",
+     "color": 4292617766
+    }
+   ]
+  },
+  {
+   "id": "g5",
+   "number": 5,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف الخامس",
+   "subjects": [
+    {
+     "id": "g5_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g5_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g5_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g5_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g5_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g5_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g5_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g6",
+   "number": 6,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف السادس",
+   "subjects": [
+    {
+     "id": "g6_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g6_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g6_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g6_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g6_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g6_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g6_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g7",
+   "number": 7,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف السابع",
+   "subjects": [
+    {
+     "id": "g7_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g7_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g7_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g7_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g7_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g7_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g7_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g8",
+   "number": 8,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف الثامن",
+   "subjects": [
+    {
+     "id": "g8_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g8_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g8_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g8_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g8_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g8_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g8_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g9",
+   "number": 9,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف التاسع",
+   "subjects": [
+    {
+     "id": "g9_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g9_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g9_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g9_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g9_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g9_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g9_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g10",
+   "number": 10,
+   "stage": "upperBasic",
+   "stream": null,
+   "name": "الصف العاشر",
+   "subjects": [
+    {
+     "id": "g10_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g10_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g10_science",
+     "key": "science",
+     "name": "العلوم والحياة",
+     "icon": "science",
+     "color": 4279673674
+    },
+    {
+     "id": "g10_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g10_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g10_social",
+     "key": "social",
+     "name": "الدراسات الاجتماعية",
+     "icon": "public",
+     "color": 4290007817
+    },
+    {
+     "id": "g10_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g11_sci",
+   "number": 11,
+   "stage": "secondary",
+   "stream": "علمي",
+   "name": "الصف الحادي عشر",
+   "subjects": [
+    {
+     "id": "g11_sci_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g11_sci_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g11_sci_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g11_sci_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g11_sci_physics",
+     "key": "physics",
+     "name": "الفيزياء",
+     "icon": "bolt",
+     "color": 4293548044
+    },
+    {
+     "id": "g11_sci_chemistry",
+     "key": "chemistry",
+     "name": "الكيمياء",
+     "icon": "biotech",
+     "color": 4278751666
+    },
+    {
+     "id": "g11_sci_biology",
+     "key": "biology",
+     "name": "الأحياء",
+     "icon": "eco",
+     "color": 4279599165
+    },
+    {
+     "id": "g11_sci_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g11_lit",
+   "number": 11,
+   "stage": "secondary",
+   "stream": "أدبي",
+   "name": "الصف الحادي عشر",
+   "subjects": [
+    {
+     "id": "g11_lit_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g11_lit_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g11_lit_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g11_lit_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g11_lit_geography",
+     "key": "geography",
+     "name": "الجغرافيا",
+     "icon": "map",
+     "color": 4288766471
+    },
+    {
+     "id": "g11_lit_history",
+     "key": "history",
+     "name": "التاريخ",
+     "icon": "history_edu",
+     "color": 4288614969
+    },
+    {
+     "id": "g11_lit_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g12_sci",
+   "number": 12,
+   "stage": "secondary",
+   "stream": "علمي",
+   "name": "الصف الثاني عشر",
+   "subjects": [
+    {
+     "id": "g12_sci_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g12_sci_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g12_sci_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g12_sci_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g12_sci_physics",
+     "key": "physics",
+     "name": "الفيزياء",
+     "icon": "bolt",
+     "color": 4293548044
+    },
+    {
+     "id": "g12_sci_chemistry",
+     "key": "chemistry",
+     "name": "الكيمياء",
+     "icon": "biotech",
+     "color": 4278751666
+    },
+    {
+     "id": "g12_sci_biology",
+     "key": "biology",
+     "name": "الأحياء",
+     "icon": "eco",
+     "color": 4279599165
+    },
+    {
+     "id": "g12_sci_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  },
+  {
+   "id": "g12_lit",
+   "number": 12,
+   "stage": "secondary",
+   "stream": "أدبي",
+   "name": "الصف الثاني عشر",
+   "subjects": [
+    {
+     "id": "g12_lit_arabic",
+     "key": "arabic",
+     "name": "اللغة العربية",
+     "icon": "menu_book",
+     "color": 4279203438
+    },
+    {
+     "id": "g12_lit_english",
+     "key": "english",
+     "name": "اللغة الإنجليزية",
+     "icon": "translate",
+     "color": 4286331629
+    },
+    {
+     "id": "g12_lit_islamic",
+     "key": "islamic",
+     "name": "التربية الإسلامية",
+     "icon": "mosque",
+     "color": 4279080072
+    },
+    {
+     "id": "g12_lit_math",
+     "key": "math",
+     "name": "الرياضيات",
+     "icon": "calculate",
+     "color": 4280640491
+    },
+    {
+     "id": "g12_lit_geography",
+     "key": "geography",
+     "name": "الجغرافيا",
+     "icon": "map",
+     "color": 4288766471
+    },
+    {
+     "id": "g12_lit_history",
+     "key": "history",
+     "name": "التاريخ",
+     "icon": "history_edu",
+     "color": 4288614969
+    },
+    {
+     "id": "g12_lit_tech",
+     "key": "tech",
+     "name": "التكنولوجيا",
+     "icon": "computer",
+     "color": 4282865001
+    }
+   ]
+  }
+ ],
+ "bundledPacks": {
+  "g4": 1,
+  "g9": 1
+ }
+}
