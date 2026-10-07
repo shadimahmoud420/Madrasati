@@ -22,9 +22,10 @@ workflows:
         # - madrasati_backend
       vars:
         BUNDLE_ID: com.madrasatigaza.madrasati
-        # App Store Connect → App → App Information → Apple ID. Leave empty
-        # until the app record exists; build numbers then use Codemagic's.
-        APP_STORE_APPLE_ID: ""
+        # Optional: once the app exists in App Store Connect, add
+        #   APP_STORE_APPLE_ID: <App Information → Apple ID>
+        # so build numbers continue from TestFlight. Codemagic rejects an
+        # empty value, so leave the line out until then.
     scripts:
       - name: Get packages
         script: flutter pub get
@@ -47,7 +48,7 @@ workflows:
         script: |
           # Next build number = latest TestFlight build + 1; falls back to
           # Codemagic's counter when the lookup isn't possible yet.
-          if [ -n "$APP_STORE_APPLE_ID" ] \
+          if [ -n "${APP_STORE_APPLE_ID:-}" ] \
              && LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null) \
              && [[ "$LATEST" =~ ^[0-9]+$ ]]; then
             BUILD=$((LATEST + 1))
